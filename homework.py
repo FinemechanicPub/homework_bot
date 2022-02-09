@@ -94,7 +94,7 @@ def report_error(error: Exception, bot: Bot):
     try:
         if message not in error_cache:
             error_cache.add(message)
-            bot.send_message(message)
+            bot.send_message(TELEGRAM_CHAT_ID, message)
     except Exception as error:
         logger.error(f'Ошибка при отправке сообщения об ошибке. {error}')
 
