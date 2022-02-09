@@ -44,12 +44,10 @@ def send_message(bot: Bot, message: str) -> None:
 
 def get_api_answer(current_timestamp: int) -> dict:
     """Запрос данных у сервера."""
-    timestamp = current_timestamp or int(time.time())
-    params = {'from_date': timestamp}
     response = requests.get(
         url=ENDPOINT,
         headers=HEADERS,
-        params=params
+        params={'from_date': current_timestamp or int(time.time())}
     )
     if response.status_code != 200:  # response.ok не поддерживается тестами
         raise ConnectionError(f'Сервер вернул ошибку {response.status_code}')
