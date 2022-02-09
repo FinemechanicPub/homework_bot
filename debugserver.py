@@ -3,13 +3,17 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 HOST = '127.0.0.1'
-PORT = 80
+PORT = 8080
 SAMPLE_NO_HOMEWORKS = '''{
+   "current_date":1581604970
+}
+'''
+SAMPLE_EMPTY_HOMEWORKS = '''{
    "homeworks":[],
    "current_date":1581604970
 }
 '''
-SAMPLE_MULTIMPLE_HOMEWORKS = '''{
+SAMPLE_HOMEWORK = '''{
    "homeworks":[
       {
          "id":124,
@@ -18,14 +22,33 @@ SAMPLE_MULTIMPLE_HOMEWORKS = '''{
          "reviewer_comment":"Код не по PEP8, нужно исправить",
          "date_updated":"2020-02-13T16:42:47Z",
          "lesson_name":"Итоговый проект"
-      },
+      }
+   ],
+   "current_date":1581604970
+}
+'''
+SAMPLE_HOMEWORK_WRONG_STATUS = '''{
+   "homeworks":[
       {
-         "id":123,
-         "status":"approved",
-         "homework_name":"username__hw_test.zip",
-         "reviewer_comment":"Всё нравится",
-         "date_updated":"2020-02-11T14:40:57Z",
-         "lesson_name":"Тестовый проект"
+         "id":124,
+         "status":"undefined status",
+         "homework_name":"username__hw_python_oop.zip",
+         "reviewer_comment":"Код не по PEP8, нужно исправить",
+         "date_updated":"2020-02-13T16:42:47Z",
+         "lesson_name":"Итоговый проект"
+      }
+   ],
+   "current_date":1581604970
+}
+'''
+
+SAMPLE_HOMEWORK_ILL_FORMED = '''{
+   "homeworks":[
+      {
+         "id":124,
+         "reviewer_comment":"Код не по PEP8, нужно исправить",
+         "date_updated":"2020-02-13T16:42:47Z",
+         "lesson_name":"Итоговый проект"
       }
    ],
    "current_date":1581604970
@@ -41,7 +64,7 @@ class DebugServer(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
         self.end_headers()
-        self.wfile.write(bytes(SAMPLE_MULTIMPLE_HOMEWORKS, 'utf-8'))
+        self.wfile.write(bytes(SAMPLE_HOMEWORK, 'utf-8'))
 
 
 if __name__ == '__main__':
