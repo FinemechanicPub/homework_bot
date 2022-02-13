@@ -22,7 +22,7 @@ WRONG_STATUS_CODE = (
     'Параметры запроса: url={url}, headers={headers}, params={params}.'
 )
 SERVER_FAIL = (
-    'Сервер вернул сообщение "{name}" следующего содержания: {text} '
+    'Сервер вернул сообщение "{name}" следующего содержания: "{text}". '
     'Параметры запроса: url={url}, headers={headers}, params={params}.'
 )
 WRONG_RESPONSE_OBJECT = 'Вместо словаря от сервера получен объект {type_name}'
