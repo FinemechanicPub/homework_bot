@@ -11,14 +11,14 @@ from telegram import Bot
 from telegram.error import TelegramError
 
 SUCCESS = 'В Telegram отправлено сообщение: "{message}"'
-FAILURE = 'Сбой в работе программы. {error_text}'
+FAILURE = 'Сбой в работе программы. {error}'
 REQUEST_FAIL = (
     'Не удалось подключиться к серверу. '
     'Параметры запроса: url={url}, headers={headers}, params={params}. '
-    'Ошибка: {error_text}'
+    'Ошибка: {error}'
 )
 WRONG_STATUS_CODE = (
-    'Сервер вернул неожиданный статус ответа: {status_code}. '
+    'Сервер вернул неожиданный статус ответа: {code}. '
     'Параметры запроса: url={url}, headers={headers}, params={params}.'
 )
 SERVER_FAIL = (
@@ -33,11 +33,10 @@ NO_HOMEWORKS_IN_RESPONSE = 'В ответе сервера не обнаруже
 WRONG_HOMEWORK_STATUS = 'Неизвестный статус домашней работы - "{status}"'
 STATUS_CHANGED = 'Изменился статус проверки работы "{name}". {verdict}'
 MISSING_VARIABLE = 'Не задана(ы) переменная(ые) среды: {names}'
-ERROR_REPORT_FAIL = 'Ошибка при отправке сообщения об ошибке: {error_text}'
+ERROR_REPORT_FAIL = 'Ошибка при отправке сообщения об ошибке: {error}'
 PROCESSING_COMPLETE = 'Обработка статуса домашних работ завершена успешно.'
 NO_HOMEWORK_UPDATE = 'Обновлений не получено.'
 
-error_cache = set()
 formatter = logging.Formatter(
     '%(asctime)s [%(levelname)s] Log "%(name)s" function "%(funcName)s" '
     'line %(lineno)d - %(message)s'
@@ -52,10 +51,10 @@ file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
 load_dotenv()
+PRACTICUM_TOKEN = TELEGRAM_TOKEN = TELEGRAM_CHAT_ID = None
 VARIABLES = ('PRACTICUM_TOKEN', 'TELEGRAM_TOKEN', 'TELEGRAM_CHAT_ID')
-PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID = (
-    os.getenv(name) for name in VARIABLES
-)
+for name in VARIABLES:
+    globals()[name] = os.getenv(name)
 
 RETRY_TIME = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
@@ -81,16 +80,14 @@ def get_api_answer(current_timestamp: int) -> dict:
         'headers': HEADERS,
         'params': {'from_date': current_timestamp}
     }
-    response = None
+    #  response = None
     try:
         response = requests.get(**request_data)
     except requests.RequestException as error:
-        raise ConnectionError(REQUEST_FAIL.format(
-            error_text=error, **request_data
-        ))
+        raise ConnectionError(REQUEST_FAIL.format(error=error, **request_data))
     if response.status_code != 200:
         raise ValueError(WRONG_STATUS_CODE.format(
-            status_code=response.status_code, **request_data
+            code=response.status_code, **request_data
         ))
     json = response.json()
     for key in ('error', 'code'):
@@ -127,46 +124,44 @@ def parse_status(homework: dict) -> str:
 
 def check_tokens() -> bool:
     """Проверка наличия токенов доступа к сервисам."""
-    missing_variables = [name for name in VARIABLES if not globals().get(name)]
-    if missing_variables:
-        logger.critical(
-            MISSING_VARIABLE.format(names=', '.join(missing_variables))
-        )
-    return not missing_variables
+    missing = [name for name in VARIABLES if not globals().get(name)]
+    if missing:
+        logger.critical(MISSING_VARIABLE.format(names=', '.join(missing)))
+    return not missing
 
 
-def send_error(bot: Bot, message: str):
+def send_error(bot: Bot, message: str, error_cache: set):
     """Отправка сообщения об ошибке в Telegram."""
     try:
         if message not in error_cache:
             send_message(bot, message)
             error_cache.add(message)
     except Exception as error:
-        logger.exception(ERROR_REPORT_FAIL.format(error_text=error))
+        logger.exception(ERROR_REPORT_FAIL.format(error=error))
 
 
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        raise SystemExit()
+        raise RuntimeError()
+    error_cache = set()
     bot = Bot(token=TELEGRAM_TOKEN)
-    current_timestamp = int(time.time())
+    timestamp = int(time.time())
     while True:
         try:
-            response = get_api_answer(current_timestamp)
+            response = get_api_answer(timestamp)
             homeworks = check_response(response)
             if homeworks:
                 send_message(bot, parse_status(homeworks[0]))
             else:
                 logger.debug(NO_HOMEWORK_UPDATE)
-            current_timestamp = response.get('current_date', current_timestamp)
+            timestamp = response.get('current_date', timestamp)
         except TelegramError as error:
-            message = FAILURE.format(error_text=error)
-            logger.exception(message)
+            logger.exception(FAILURE.format(error=error))
         except Exception as error:
-            message = FAILURE.format(error_text=error)
+            message = FAILURE.format(error=error)
             logger.exception(message)
-            send_error(bot, message)
+            send_error(bot, message, error_cache)
         else:
             error_cache.clear()
             logger.info(PROCESSING_COMPLETE)
