@@ -55,6 +55,25 @@ SAMPLE_HOMEWORK_ILL_FORMED = '''{
 }
 '''
 
+SAMPLE_RESPONSE_WITH_SERVER_ERROR = '''{
+   "homeworks":[],
+   "current_date":1581604970,
+   "error": "Тест ошибки"
+}'''
+
+INCORRECT_JSON = '''{
+   homeworks":
+      {
+         "id":124,
+         "reviewer_comment":"Код не по PEP8, нужно исправить",
+         "date_updated":"2020-02-13T16:42:47Z",
+         "lesson_name":"Итоговый проект"
+      }
+   ],
+   "current_date":1581604970
+}
+'''
+
 
 class DebugServer(BaseHTTPRequestHandler):
     """Имитатор сервиса сообщения статуса домашней работы."""
@@ -64,7 +83,7 @@ class DebugServer(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
         self.end_headers()
-        self.wfile.write(bytes(SAMPLE_HOMEWORK, 'utf-8'))
+        self.wfile.write(bytes(SAMPLE_HOMEWORK_ILL_FORMED, 'utf-8'))
 
 
 if __name__ == '__main__':
